@@ -665,35 +665,39 @@
 
     fullChoirButton.addEventListener('click', async () => {
       const allPlayers = [...players.values()];
+      const playingPlayers = allPlayers.filter(
+        (player) => !player.audio.paused
+      );
 
-      if (fullChoirActive) {
+      // If every bird is already playing, stop the whole choir.
+      if (playingPlayers.length === allPlayers.length) {
         allPlayers.forEach(stopPlayer);
         setFullChoirState(false);
         updatePanning();
         return;
       }
 
+      // Otherwise, start only the birds that are not already playing.
+      // This preserves the playback position of any birds already active.
+      const stoppedPlayers = allPlayers.filter(
+        (player) => player.audio.paused
+      );
+
       try {
         await resumeAudioContext();
 
-        allPlayers.forEach((player) => {
-          player.audio.pause();
-          player.audio.currentTime = 0;
-          connectPlayer(player);
-        });
-
         const results = await Promise.allSettled(
-          allPlayers.map((player) => player.audio.play())
+          stoppedPlayers.map(async (player) => {
+            connectPlayer(player);
+            await player.audio.play();
+          })
         );
 
-        let startedCount = 0;
-
         results.forEach((result, index) => {
-          const player = allPlayers[index];
+          const player = stoppedPlayers[index];
 
           if (result.status === 'fulfilled') {
             setBirdButtonState(player, true);
-            startedCount += 1;
           } else {
             setBirdButtonState(player, false);
             console.error(
@@ -703,7 +707,11 @@
           }
         });
 
-        setFullChoirState(startedCount > 0);
+        const allPlaying = allPlayers.every(
+          (player) => !player.audio.paused
+        );
+
+        setFullChoirState(allPlaying);
         updatePanning();
       } catch (error) {
         setFullChoirState(false);
