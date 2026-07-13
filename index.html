@@ -660,6 +660,7 @@
     }
 
     async function startPlayer(player) {
+      await player.ready;
       connectPlayer(player);
       await player.audio.play();
       setBirdButtonState(player, true);
@@ -693,7 +694,7 @@
 
     document.querySelectorAll('.bird-button[data-audio]').forEach((button) => {
       const audioPath = button.dataset.audio;
-      const audio = new Audio(audioPath);
+      const audio = new Audio();
       const key = speciesKey(audioPath);
       const birdName = button.querySelector('.bird-name').textContent;
 
@@ -703,11 +704,30 @@
 
       const player = {
         audio,
+        audioPath,
+        objectUrl: null,
+        ready: null,
         source: null,
         panner: null,
         button,
         birdName
       };
+
+      // Download the whole recording before playback. When the page is hosted,
+      // starting many WAV streams simultaneously can cause audible drop-outs.
+      // Blob URLs make each loop play from local browser memory instead.
+      player.ready = fetch(audioPath, { cache: 'force-cache' })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status} while loading ${audioPath}`);
+          }
+          return response.blob();
+        })
+        .then((blob) => {
+          player.objectUrl = URL.createObjectURL(blob);
+          audio.src = player.objectUrl;
+          audio.load();
+        });
 
       players.set(key, player);
 
@@ -739,11 +759,15 @@
     });
 
     fullChoirButton.addEventListener('click', async () => {
+      fullChoirButton.disabled = true;
       const stoppedPlayers = [...players.values()].filter(
         (player) => player.audio.paused
       );
 
-      if (stoppedPlayers.length === 0) return;
+      if (stoppedPlayers.length === 0) {
+        fullChoirButton.disabled = false;
+        return;
+      }
 
       try {
         await resumeAudioContext();
@@ -766,7 +790,15 @@
         updatePanning();
       } catch (error) {
         console.error('The full choir could not start.', error);
+      } finally {
+        fullChoirButton.disabled = false;
       }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      players.forEach((player) => {
+        if (player.objectUrl) URL.revokeObjectURL(player.objectUrl);
+      });
     });
 
     stopButton.addEventListener('click', () => {
