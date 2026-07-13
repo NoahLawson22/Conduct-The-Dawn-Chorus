@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Conduct The Dawn Chorus — mix looping birdsong recordings from across the UK.">
+  <title>Conduct The Dawn Chorus</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --sunrise-top: #f5c978;
+      --sunrise-middle: #dc941c;
+      --sunrise-bottom: #b96f0d;
+      --ink: #3b291d;
+      --ivory: #fff4d5;
+      --ivory-deep: #f0d79b;
+      --forest: #1f4a35;
+      --forest-deep: #123426;
+      --gold: #ffd878;
+      --focus: #fff9e8;
+      --shadow: rgba(73, 39, 8, 0.27);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { min-height: 100%; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      padding: clamp(1.25rem, 3vw, 2.75rem);
+      color: var(--ink);
+      font-family: "Cormorant Garamond", Georgia, serif;
+      background:
+        radial-gradient(circle at 50% -10%, rgba(255, 245, 198, 0.72), transparent 37%),
+        linear-gradient(180deg, var(--sunrise-top) 0%, var(--sunrise-middle) 47%, var(--sunrise-bottom) 100%);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.12;
+      background-image:
+        repeating-radial-gradient(circle at 0 0, rgba(66, 37, 12, 0.25) 0 0.55px, transparent 0.65px 4px),
+        repeating-linear-gradient(92deg, rgba(255,255,255,0.16) 0 1px, transparent 1px 7px);
+      mix-blend-mode: soft-light;
+    }
+
+    header, main, footer { position: relative; z-index: 1; }
+
+    header { text-align: center; }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.6rem, 6vw, 5.2rem);
+      line-height: 0.95;
+      font-weight: 500;
+      letter-spacing: 0.025em;
+      text-wrap: balance;
+    }
+
+    .instructions {
+      max-width: 48rem;
+      margin: 1rem auto 0;
+      font-size: clamp(1rem, 1.8vw, 1.2rem);
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    main {
+      flex: 1;
+      width: 100%;
+      display: grid;
+      place-items: center;
+      padding: clamp(2.5rem, 6vw, 5rem) 0;
+    }
+
+
+    .choir-control {
+      width: min(100%, 76rem);
+      display: grid;
+      justify-items: center;
+      margin-bottom: clamp(1.6rem, 3vw, 2.6rem);
+    }
+
+    .choir-buttons {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: clamp(1rem, 2vw, 1.6rem);
+      flex-wrap: wrap;
+    }
+
+    .bird-grid {
+      width: min(100%, 76rem);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(9.5rem, 1fr));
+      gap: clamp(1.6rem, 3vw, 2.8rem);
+      align-items: start;
+    }
+
+    .bird-row { display: contents; }
+
+    .bird-control {
+      min-width: 0;
+    }
+
+    .bird-cell {
+      display: grid;
+      justify-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+    }
+
+    .bird-button {
+      width: min(100%, 9.25rem);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 1.5px solid rgba(59, 41, 29, 0.5);
+      color: var(--ink);
+      cursor: pointer;
+      padding: 1rem 0.7rem;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 0.35rem;
+      font: inherit;
+      background:
+        radial-gradient(circle at 42% 23%, rgba(255,255,255,0.96) 0 6%, transparent 7%),
+        radial-gradient(circle at 45% 32%, #fffaf0 0%, var(--ivory) 51%, var(--ivory-deep) 100%);
+      box-shadow:
+        0 0.85rem 1.45rem var(--shadow),
+        inset 0 2px 4px rgba(255,255,255,0.92),
+        inset 0 -4px 8px rgba(126, 73, 17, 0.13);
+      transition: transform 180ms ease, color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+
+    .bird-button:hover { transform: translateY(-4px); }
+
+    .bird-button:focus-visible {
+      outline: 4px solid var(--focus);
+      outline-offset: 4px;
+    }
+
+    .bird-button[aria-pressed="true"] {
+      color: var(--focus);
+      transform: scale(0.965);
+      background:
+        radial-gradient(circle at 42% 23%, rgba(255,255,255,0.25) 0 5%, transparent 6%),
+        radial-gradient(circle at 45% 32%, #356f50 0%, var(--forest) 58%, var(--forest-deep) 100%);
+      box-shadow:
+        0 0 0.9rem rgba(255, 216, 120, 0.92),
+        0 0 2rem rgba(255, 216, 120, 0.55),
+        inset 0 3px 9px rgba(0,0,0,0.24);
+    }
+
+    .bird-icon {
+      width: 4.8rem;
+      height: 3.8rem;
+      overflow: visible;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .bird-name {
+      font-size: 1.16rem;
+      line-height: 1.02;
+      font-weight: 600;
+      text-align: center;
+    }
+
+
+    .volume-control {
+      width: min(100%, 30rem);
+      margin: 2.25rem auto 0;
+      display: grid;
+      grid-template-columns: auto minmax(10rem, 1fr) auto;
+      align-items: center;
+      gap: 0.85rem;
+      font-size: clamp(1rem, 1.8vw, 1.15rem);
+      font-weight: 600;
+    }
+
+    .volume-control input[type="range"] {
+      width: 100%;
+      accent-color: var(--forest);
+      cursor: pointer;
+    }
+
+    .volume-value {
+      min-width: 3.5ch;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    @media (max-width: 420px) {
+      .volume-control {
+        grid-template-columns: 1fr auto;
+      }
+
+      .volume-control label {
+        grid-column: 1 / -1;
+      }
+    }
+
+    footer {
+      text-align: center;
+      font-size: clamp(0.95rem, 1.6vw, 1.1rem);
+      line-height: 1.45;
+      padding-top: 1rem;
+    }
+
+    .status {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 1.2rem; }
+
+      .choir-buttons {
+        flex-wrap: nowrap;
+      }
+
+      .choir-buttons .bird-button {
+        width: min(48%, 8.5rem);
+      }
+
+      .bird-grid {
+        grid-template-columns: repeat(2, minmax(8rem, 1fr));
+        gap: 1.5rem 1rem;
+      }
+      .bird-button { width: min(100%, 8.5rem); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Conduct The Dawn Chorus</h1>
+  </header>
+
+  <main>
+    <!-- Each cell is labelled by its bird name so many screen readers announce the name before row/column position. -->
+    <div class="choir-control">
+      <div class="choir-buttons">
+        <button
+          class="bird-button"
+          id="full-choir-button"
+          type="button"
+          aria-label="Full choir"
+        >
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of three birds singing together">
+            <path d="M12 47 Q15 34 28 30 Q41 26 49 36 Q54 44 47 51 Q37 58 24 54 Q15 52 12 47Z"/>
+            <path d="M46 42 Q49 27 64 22 Q79 17 88 30 Q94 40 86 49 Q75 57 60 53 Q49 51 46 42Z"/>
+            <path d="M31 31 Q34 21 45 18 Q56 15 63 23 Q67 30 62 36 Q54 41 43 38 Q34 37 31 31Z"/>
+            <path d="M47 36 L58 33 L49 39"/>
+            <path d="M87 30 L98 33 L88 36"/>
+            <path d="M62 23 L72 25 L63 28"/>
+            <path d="M18 50 L7 57"/>
+            <path d="M54 50 L43 58"/>
+            <path d="M38 36 L28 42"/>
+            <circle cx="44" cy="34" r="1.2" fill="currentColor"/>
+            <circle cx="83" cy="29" r="1.2" fill="currentColor"/>
+            <circle cx="59" cy="22" r="1.1" fill="currentColor"/>
+          </svg>
+          <span class="bird-name">Full choir</span>
+        </button>
+
+        <button
+          class="bird-button"
+          id="stop-button"
+          type="button"
+          aria-label="Stop"
+        >
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Simple line drawing of an empty nest">
+            <path d="M18 38 Q50 58 82 38"/>
+            <path d="M23 34 Q50 49 77 34"/>
+            <path d="M29 31 Q50 42 71 31"/>
+            <path d="M16 42 Q50 66 84 42"/>
+            <path d="M24 47 Q50 60 76 47"/>
+          </svg>
+          <span class="bird-name">Stop</span>
+        </button>
+      </div>
+    </div>
+
+    <section class="bird-grid" role="table">
+      <div class="bird-row" role="row" aria-rowindex="1">
+        <article class="bird-control" role="cell" aria-colindex="1" aria-labelledby="bird-wren-name">
+        
+        <button class="bird-button" type="button" data-audio="audio/wren.wav" aria-pressed="false" aria-label="Wren">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of a tiny round wren with a sharply cocked tail">
+            <path d="M21 45 Q25 29 43 27 Q61 25 69 38 Q74 48 64 54 Q50 61 34 55 Q24 52 21 45Z"/>
+            <path d="M67 38 L82 34 L69 42"/><path d="M25 39 L9 22 L28 33"/><path d="M38 55 L35 63 M50 56 L49 64"/><path d="M36 34 Q46 30 56 35"/><circle cx="59" cy="34" r="1.3" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-wren-name">Wren</span>
+        </button>
+
+        
+        </article>
+        <article class="bird-control" role="cell" aria-colindex="2" aria-labelledby="bird-robin-name">
+        
+        <button class="bird-button" type="button" data-audio="audio/robin.wav" aria-pressed="false" aria-label="Robin">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of an upright robin with rounded chest and fine bill">
+            <path d="M27 50 Q20 33 33 21 Q47 8 63 19 Q75 28 70 46 Q65 60 45 60 Q32 59 27 50Z"/><path d="M66 27 L84 31 L68 34"/><path d="M31 49 L18 57"/><path d="M41 59 L39 66 M53 59 L55 66"/><path d="M34 25 Q47 36 62 48"/><circle cx="61" cy="24" r="1.4" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-robin-name">Robin</span>
+        </button>
+
+        
+        </article>
+        <article class="bird-control" role="cell" aria-colindex="3" aria-labelledby="bird-blackbird-name">
+        
+        <button class="bird-button" type="button" data-audio="audio/blackbird.wav" aria-pressed="false" aria-label="Blackbird">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of a large long-tailed blackbird with a strong bill">
+            <path d="M19 48 Q20 30 40 21 Q60 13 73 27 Q82 39 70 52 Q57 63 36 58 Q23 56 19 48Z"/><path d="M71 28 L94 34 L72 37"/><path d="M26 49 L3 61 L30 55"/><path d="M40 58 L38 66 M54 58 L56 66"/><path d="M35 29 Q52 24 66 35"/><circle cx="67" cy="27" r="1.5" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-blackbird-name">Blackbird</span>
+        </button>
+
+        
+        </article>
+      </div>
+      <div class="bird-row" role="row" aria-rowindex="2">
+        <article class="bird-control" role="cell" aria-colindex="1" aria-labelledby="bird-chaffinch-name">
+        
+        <button class="bird-button" type="button" data-audio="audio/chaffinch.wav" aria-pressed="false" aria-label="Chaffinch">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of a stout chaffinch with a deep conical bill and two wing bars">
+            <path d="M22 47 Q22 29 41 20 Q60 12 73 28 Q80 40 69 52 Q55 63 35 57 Q23 54 22 47Z"/><path d="M70 28 L88 34 L71 38"/><path d="M27 49 L10 59"/><path d="M39 57 L37 65 M53 58 L55 66"/><path d="M35 31 Q50 24 65 36"/><path d="M41 38 L61 43 M39 43 L58 49"/><circle cx="66" cy="26" r="1.4" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-chaffinch-name">Chaffinch</span>
+        </button>
+
+        
+        </article>
+        <article class="bird-control" role="cell" aria-colindex="2" aria-labelledby="bird-chiffchaff-name">
+        
+        <button class="bird-button" type="button" data-audio="audio/chiffchaff.wav" aria-pressed="false" aria-label="Chiffchaff">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of a slim chiffchaff with a fine bill, short wing and pale eyebrow">
+            <path d="M20 46 Q23 31 40 25 Q57 19 70 31 Q76 41 67 51 Q54 59 36 55 Q23 53 20 46Z"/><path d="M69 31 L88 33 L70 36"/><path d="M27 49 L8 58"/><path d="M38 55 L36 64 M51 55 L52 64"/><path d="M37 30 Q50 24 65 31"/><path d="M57 27 L68 27"/><circle cx="65" cy="30" r="1.2" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-chiffchaff-name">Chiffchaff</span>
+        </button>
+
+        
+        </article>
+        <article class="bird-control" role="cell" aria-colindex="3" aria-labelledby="bird-goldfinch-name">
+        
+        <button class="bird-button" type="button" data-audio="audio/goldfinch.wav" aria-pressed="false" aria-label="Goldfinch">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of a compact goldfinch with pointed bill, face mask and bold wing band">
+            <path d="M22 47 Q23 30 41 21 Q59 13 72 28 Q80 40 69 52 Q55 62 35 57 Q23 54 22 47Z"/><path d="M70 28 L89 31 L71 36"/><path d="M27 50 L10 60"/><path d="M40 57 L38 65 M53 57 L55 65"/><path d="M58 20 Q67 25 70 34 M61 22 L58 34"/><path d="M39 39 L64 45 M42 45 L60 49"/><circle cx="66" cy="27" r="1.3" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-goldfinch-name">Goldfinch</span>
+        </button>
+
+        
+        </article>
+      </div>
+      <div class="bird-row" role="row" aria-rowindex="3">
+        <article class="bird-control" role="cell" aria-colindex="1" aria-labelledby="bird-cuckoo-name">
+        
+        <button class="bird-button" type="button" data-audio="audio/cuckoo.wav" aria-pressed="false" aria-label="Cuckoo">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of a common cuckoo with a slim body, pointed wings and long graduated tail">
+            <path d="M18 43 Q24 27 43 23 Q61 19 74 30 Q82 38 75 47 Q66 56 48 55 Q30 54 20 48 Q17 46 18 43Z"/>
+            <path d="M73 30 L91 32 L75 36"/>
+            <path d="M25 47 L5 57 L28 52"/>
+            <path d="M29 50 L10 64 L36 54"/>
+            <path d="M41 27 Q53 18 68 28 Q57 33 47 43"/>
+            <path d="M47 31 L69 46"/>
+            <path d="M48 54 L47 63 M58 53 L60 62"/>
+            <path d="M34 39 L65 40 M37 44 L67 45"/>
+            <circle cx="69" cy="29" r="1.3" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-cuckoo-name">Cuckoo</span>
+        </button>
+
+        
+        </article>
+        <article class="bird-control" role="cell" aria-colindex="2" aria-labelledby="bird-swallow-name">
+
+        <button class="bird-button" type="button" data-audio="audio/swallow.wav" aria-pressed="false" aria-label="Swallow">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of a barn swallow in flight with long pointed wings and a deeply forked tail">
+            <path d="M17 36 Q31 27 46 29 Q59 30 69 38 Q58 41 47 40 Q34 40 24 44 Q18 42 17 36Z"/>
+            <path d="M43 31 Q33 18 20 13 Q28 28 36 37"/>
+            <path d="M50 31 Q63 17 80 12 Q69 28 58 38"/>
+            <path d="M67 38 L89 35 L70 42"/>
+            <path d="M24 43 L7 55 L28 47"/>
+            <path d="M30 46 L19 64 L38 49"/>
+            <path d="M38 48 L42 65 L46 49"/>
+            <path d="M43 34 Q49 31 55 34"/>
+            <circle cx="63" cy="35" r="1.2" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-swallow-name">Swallow</span>
+        </button>
+
+
+        </article>
+        <article class="bird-control" role="cell" aria-colindex="3" aria-labelledby="bird-dunnock-name">
+        
+        <button class="bird-button" type="button" data-audio="audio/dunnock.wav" aria-pressed="false" aria-label="Dunnock">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of a slim dunnock with fine bill, grey head and streaked back">
+            <path d="M20 48 Q22 31 40 23 Q58 16 71 30 Q78 42 67 53 Q53 61 34 56 Q22 54 20 48Z"/><path d="M70 30 L88 33 L71 36"/><path d="M26 50 L6 61"/><path d="M38 56 L36 65 M52 56 L54 65"/><path d="M39 27 L34 45 M46 25 L42 48 M53 25 L49 48"/><circle cx="66" cy="29" r="1.3" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-dunnock-name">Dunnock</span>
+        </button>
+
+        
+        </article>
+      </div>
+      <div class="bird-row" role="row" aria-rowindex="4">
+        <article class="bird-control" role="cell" aria-colindex="1" aria-labelledby="bird-blackcap-name">
+        
+        <button class="bird-button" type="button" data-audio="audio/blackcap.wav" aria-pressed="false" aria-label="Blackcap">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of a blackcap with a smooth body, fine bill and dark crown cap">
+            <path d="M20 47 Q22 30 41 22 Q59 15 72 29 Q79 41 68 52 Q54 61 35 56 Q22 54 20 47Z"/><path d="M71 29 L89 32 L72 36"/><path d="M27 49 L8 60"/><path d="M39 56 L37 65 M52 56 L54 65"/><path d="M48 20 Q61 16 71 28 L56 29 Q50 26 48 20Z"/><circle cx="67" cy="28" r="1.2" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-blackcap-name">Blackcap</span>
+        </button>
+
+        
+        </article>
+        <article class="bird-control" role="cell" aria-colindex="2" aria-labelledby="bird-willow-warbler-name">
+        
+        <button class="bird-button" type="button" data-audio="audio/willow-warbler.wav" aria-pressed="false" aria-label="Willow warbler">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of a willow warbler with a fine bill, pale eyebrow, long wings and slender legs">
+            <path d="M20 46 Q23 31 40 24 Q57 18 70 30 Q77 40 68 50 Q55 59 36 55 Q24 53 20 46Z"/>
+            <path d="M69 30 L89 32 L70 36"/>
+            <path d="M27 49 L8 59"/>
+            <path d="M39 55 L36 65 M52 55 L55 65"/>
+            <path d="M42 27 Q55 22 67 29"/>
+            <path d="M49 28 L68 28"/>
+            <path d="M37 35 Q49 30 62 37 Q54 47 40 48"/>
+            <path d="M43 39 L63 43"/>
+            <circle cx="65" cy="29" r="1.2" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-willow-warbler-name">Willow warbler</span>
+        </button>
+
+        
+        </article>
+        <article class="bird-control" role="cell" aria-colindex="3" aria-labelledby="bird-whitethroat-name">
+        
+        <button class="bird-button" type="button" data-audio="audio/whitethroat.wav" aria-pressed="false" aria-label="Whitethroat">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of a whitethroat with long tail, fine bill and outlined white throat">
+            <path d="M21 46 Q23 31 40 24 Q57 18 70 30 Q77 40 68 50 Q55 59 36 55 Q24 53 21 46Z"/><path d="M69 30 L88 32 L70 36"/><path d="M28 49 L3 61 L30 55"/><path d="M39 55 L37 64 M52 55 L54 64"/><path d="M58 34 Q62 44 70 44"/><circle cx="65" cy="29" r="1.2" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-whitethroat-name">Whitethroat</span>
+        </button>
+
+        
+        </article>
+      </div>
+      <div class="bird-row" role="row" aria-rowindex="5">
+        <article class="bird-control" role="cell" aria-colindex="1" aria-labelledby="bird-reed-warbler-name">
+        
+        <button class="bird-button" type="button" data-audio="audio/reed-warbler.wav" aria-pressed="false" aria-label="Reed warbler">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of a reed warbler with long slim bill, plain head and long body">
+            <path d="M18 46 Q22 31 40 25 Q58 19 72 30 Q80 40 70 50 Q56 59 35 55 Q22 53 18 46Z"/><path d="M71 30 L96 31 L72 35"/><path d="M25 49 L4 60"/><path d="M39 55 L37 64 M53 55 L55 64"/><path d="M40 31 Q54 26 67 32"/><circle cx="67" cy="29" r="1.2" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-reed-warbler-name">Reed warbler</span>
+        </button>
+
+        
+        </article>
+        <article class="bird-control" role="cell" aria-colindex="2" aria-labelledby="bird-garden-warbler-name">
+        
+        <button class="bird-button" type="button" data-audio="audio/garden-warbler.wav" aria-pressed="false" aria-label="Garden warbler">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of a garden warbler with rounded head, plain face and short stout body">
+            <path d="M22 48 Q20 31 39 21 Q59 12 73 28 Q81 41 69 53 Q55 63 35 58 Q23 55 22 48Z"/><path d="M71 29 L89 32 L72 36"/><path d="M28 50 L11 59"/><path d="M40 58 L38 66 M54 58 L56 66"/><path d="M39 29 Q52 22 67 30"/><circle cx="67" cy="28" r="1.3" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-garden-warbler-name">Garden warbler</span>
+        </button>
+
+        
+        </article>
+        <article class="bird-control" role="cell" aria-colindex="3" aria-labelledby="bird-sedge-warbler-name">
+        
+        <button class="bird-button" type="button" data-audio="audio/sedge-warbler.wav" aria-pressed="false" aria-label="Sedge warbler">
+          <svg class="bird-icon" viewBox="0 0 100 70" role="img" aria-label="Line drawing of a sedge warbler with long eyebrow stripe, streaked crown and back">
+            <path d="M19 46 Q22 31 40 24 Q58 18 72 30 Q79 40 69 51 Q55 59 35 55 Q22 53 19 46Z"/><path d="M71 30 L94 32 L72 36"/><path d="M26 49 L4 60"/><path d="M39 55 L37 64 M53 55 L55 64"/><path d="M53 25 L70 27"/><path d="M37 30 L32 45 M44 27 L39 47 M51 26 L47 47"/><circle cx="67" cy="29" r="1.2" fill="currentColor"/>
+          </svg>
+          <span class="bird-name" id="bird-sedge-warbler-name">Sedge warbler</span>
+        </button>
+
+        
+        </article>
+      </div>
+    </section>
+    <div class="volume-control">
+      <label for="master-volume">Volume</label>
+      <input
+        id="master-volume"
+        type="range"
+        min="0"
+        max="100"
+        value="100"
+        step="1"
+        aria-describedby="volume-value"
+      >
+      <output class="volume-value" id="volume-value" for="master-volume">100%</output>
+    </div>
+  </main>
+
+  <footer>Sounds recorded by Noah Lawson in various locations across the UK</footer>
+
+  
+  <script>
+    const players = new Map();
+    const volumeSlider = document.querySelector('#master-volume');
+    const volumeValue = document.querySelector('#volume-value');
+    const fullChoirButton = document.querySelector('#full-choir-button');
+    const stopButton = document.querySelector('#stop-button');
+    const birdGrid = document.querySelector('.bird-grid');
+    const birdCells = [...birdGrid.querySelectorAll('.bird-control')];
+
+    function getBirdGridColumnCount() {
+      if (window.matchMedia('(max-width: 480px)').matches) return 2;
+      return 3;
+    }
+
+    let currentBirdGridColumnCount = 0;
+
+    function updateBirdTableSemantics() {
+      const columnCount = getBirdGridColumnCount();
+
+      if (columnCount === currentBirdGridColumnCount) return;
+
+      currentBirdGridColumnCount = columnCount;
+      const rowCount = Math.ceil(birdCells.length / columnCount);
+      const fragment = document.createDocumentFragment();
+
+      birdGrid.setAttribute('aria-colcount', String(columnCount));
+      birdGrid.setAttribute('aria-rowcount', String(rowCount));
+
+      for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+        const row = document.createElement('div');
+        row.className = 'bird-row';
+        row.setAttribute('role', 'row');
+        row.setAttribute('aria-rowindex', String(rowIndex + 1));
+
+        birdCells
+          .slice(rowIndex * columnCount, (rowIndex + 1) * columnCount)
+          .forEach((cell, columnIndex) => {
+            cell.setAttribute('aria-colindex', String(columnIndex + 1));
+            row.appendChild(cell);
+          });
+
+        fragment.appendChild(row);
+      }
+
+      birdGrid.replaceChildren(fragment);
+    }
+
+    updateBirdTableSemantics();
+    window.addEventListener('resize', updateBirdTableSemantics);
+
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    const canUsePanning =
+      Boolean(AudioContextClass) &&
+      location.protocol !== 'file:';
+
+    let audioContext = null;
+    let masterGain = null;
+
+    function speciesKey(audioPath) {
+      return audioPath.split('/').pop().replace(/\.wav$/i, '');
+    }
+
+    function getAudioContext() {
+      if (!canUsePanning) return null;
+
+      if (!audioContext) {
+        audioContext = new AudioContextClass();
+        masterGain = audioContext.createGain();
+        masterGain.gain.value = Number(volumeSlider.value) / 100;
+        masterGain.connect(audioContext.destination);
+      }
+
+      return audioContext;
+    }
+
+    async function resumeAudioContext() {
+      const context = getAudioContext();
+
+      if (context && context.state === 'suspended') {
+        await context.resume();
+      }
+    }
+
+    function connectPlayer(player) {
+      if (!canUsePanning || player.source) return;
+
+      const context = getAudioContext();
+      player.source = context.createMediaElementSource(player.audio);
+      player.panner = context.createStereoPanner();
+
+      player.source.connect(player.panner);
+      player.panner.connect(masterGain);
+    }
+
+    function setPan(player, position) {
+      if (!canUsePanning || !player.panner || !audioContext) return;
+
+      const now = audioContext.currentTime;
+      player.panner.pan.cancelScheduledValues(now);
+      player.panner.pan.setValueAtTime(player.panner.pan.value, now);
+      player.panner.pan.linearRampToValueAtTime(position, now + 0.4);
+    }
+
+    function updatePanning() {
+      if (!canUsePanning) return;
+
+      const active = [...players.values()].filter(
+        (player) => !player.audio.paused
+      );
+
+      const count = active.length;
+
+      if (count === 0) return;
+
+      if (count === 1) {
+        setPan(active[0], 0);
+        return;
+      }
+
+      const spread = Math.min(count * 0.1, 0.9);
+
+      active.forEach((player, index) => {
+        const position = -spread + (index * (spread * 2)) / (count - 1);
+        setPan(player, position);
+      });
+    }
+
+    function setBirdButtonState(player, playing) {
+      player.button.setAttribute('aria-pressed', String(playing));
+      player.button.setAttribute('aria-label', player.birdName);
+    }
+
+    async function startPlayer(player) {
+      connectPlayer(player);
+      await player.audio.play();
+      setBirdButtonState(player, true);
+    }
+
+    function stopPlayer(player) {
+      player.audio.pause();
+      player.audio.currentTime = 0;
+      setBirdButtonState(player, false);
+    }
+
+    function applyVolume() {
+      const percentage = Number(volumeSlider.value);
+      const volume = percentage / 100;
+
+      volumeValue.value = `${percentage}%`;
+      volumeValue.textContent = `${percentage}%`;
+
+      if (canUsePanning && masterGain && audioContext) {
+        const now = audioContext.currentTime;
+        masterGain.gain.cancelScheduledValues(now);
+        masterGain.gain.setTargetAtTime(volume, now, 0.015);
+      } else {
+        players.forEach((player) => {
+          player.audio.volume = volume;
+        });
+      }
+    }
+
+    volumeSlider.addEventListener('input', applyVolume);
+
+    document.querySelectorAll('.bird-button[data-audio]').forEach((button) => {
+      const audioPath = button.dataset.audio;
+      const audio = new Audio(audioPath);
+      const key = speciesKey(audioPath);
+      const birdName = button.querySelector('.bird-name').textContent;
+
+      audio.loop = true;
+      audio.preload = 'auto';
+      audio.volume = Number(volumeSlider.value) / 100;
+
+      const player = {
+        audio,
+        source: null,
+        panner: null,
+        button,
+        birdName
+      };
+
+      players.set(key, player);
+
+      button.addEventListener('click', async () => {
+        try {
+          await resumeAudioContext();
+
+          if (!player.audio.paused) {
+            stopPlayer(player);
+          } else {
+            await startPlayer(player);
+          }
+
+          updatePanning();
+        } catch (error) {
+          setBirdButtonState(player, false);
+          console.error(
+            `${birdName} could not play. Check that ${audioPath} exists.`,
+            error
+          );
+        }
+      });
+
+      audio.addEventListener('error', () => {
+        console.error(
+          `The audio file for ${birdName} was not found or is unsupported: ${audioPath}`
+        );
+      });
+    });
+
+    fullChoirButton.addEventListener('click', async () => {
+      const stoppedPlayers = [...players.values()].filter(
+        (player) => player.audio.paused
+      );
+
+      if (stoppedPlayers.length === 0) return;
+
+      try {
+        await resumeAudioContext();
+
+        const results = await Promise.allSettled(
+          stoppedPlayers.map((player) => startPlayer(player))
+        );
+
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const player = stoppedPlayers[index];
+            setBirdButtonState(player, false);
+            console.error(
+              `${player.birdName} could not play. Check that ${player.button.dataset.audio} exists.`,
+              result.reason
+            );
+          }
+        });
+
+        updatePanning();
+      } catch (error) {
+        console.error('The full choir could not start.', error);
+      }
+    });
+
+    stopButton.addEventListener('click', () => {
+      players.forEach(stopPlayer);
+      updatePanning();
+    });
+
+    applyVolume();
+  </script>
+
+</body>
+</html>
